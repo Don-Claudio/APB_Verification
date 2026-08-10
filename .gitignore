@@ -1,0 +1,12 @@
+# Simulation build artifacts
+work/
+*.wlf
+transcript
+*.log
+
+# QuestaSim
+modelsim.ini
+
+# Editor/OS cruft
+.DS_Store
+*.swp
