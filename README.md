@@ -21,9 +21,17 @@ being written before any RTL or testbench code.
 
 ## DUT attribution
 
-TBD — an open-source APB slave will be sourced and attributed here once selected,
-per project convention (design spec is written independently and black-box from
-the DUT's documented behavior, not by reading its RTL line by line).
+DUT: `apb_slave.sv` — a single-wait-state-on-read APB slave implementing a
+5-register address map with one external hardware control/status pair.
+
+Source: https://github.com/iammituraj/apb
+Author: Mitu Raj (chip@chipmunklogic.com)
+License: per repository README — open-source, free to use/modify/distribute.
+
+Pulled in unmodified. Design spec (`docs/spec.md`) was written independently
+and black-box from the DUT's documented interface/register map, not by
+reading its FSM implementation line by line (see spec.md §1 for the one
+documented exception, consistent with the FIFO project's precedent).
 
 ## CI
 
