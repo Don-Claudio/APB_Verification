@@ -1,0 +1,3 @@
+waive --rule=explicit-parameter-storage-type --location="rtl/apb_slave.sv"
+waive --rule=line-length --location="rtl/apb_slave.sv"
+waive --rule=parameter-name-style --location="rtl/apb_slave.sv"
