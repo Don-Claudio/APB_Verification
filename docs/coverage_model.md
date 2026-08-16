@@ -15,7 +15,7 @@ Sampled once per completed transaction.
 | `cp_wait_states` | `ZERO` (write, 2-cycle), `ONE` (read, 3-cycle) | AR-1, AR-2 |
 | `cp_pready_extended` | did `PREADY` stay low ≥1 cycle before completing | IF-3 |
 | `cp_back_to_back` | new SETUP begins the cycle immediately following a completed ACCESS, no idle gap | IF-4 |
-| `cp_mid_cycle_reset` | `PRESETn` observed asserted at a non-edge-aligned instant | IF-6 |
+| `cp_mid_cycle_reset` | `PRESETn` observed asserted at a non-edge-aligned instant (confirms correct synchronous sampling, not distinct per-instant behavior — see verification_plan.md IF-6) | IF-6 |
 | `cp_mid_txn_reset` | `PRESETn` observed asserted between SETUP and completion of an in-flight transaction | IF-7 |
 
 Cross: `cp_direction × cp_wait_states` — confirms writes are always
