@@ -67,7 +67,7 @@ the deliberate exception to black-box testing.
 | AR-4 | Write-error evaluated pre-PENABLE | `wr_err` (feeding `PSLVERR`) is evaluated based on address/`PWRITE` while still in IDLE — i.e. does not require `PENABLE` to have been asserted at all. Worth a directed test to confirm whether an aborted SETUP (PSEL drops before PENABLE) still produces an error. |
 | AR-5 | Read-error evaluated during ACCESS | `rd_err` is only evaluated during the ACCESS-phase cycle, unlike AR-4 — confirm this asymmetry doesn't cause a missed or extra error under edge-case timing. |
 | AR-6 | PSTRB has no effect | Writes with any `PSTRB` pattern (including all-zero) produce the same result as a full-word write — confirms byte-strobe is accepted but not implemented. |
-| AR-7 | PSEL drop mid-transaction | Document actual DUT behavior when `PSEL` deasserts before `PENABLE`/before completion — not a pass/fail compliance check, a characterization test. |
+| AR-7 | PSEL drop mid-transaction | Design spec is silent on required behavior here — a genuine gap, not a non-issue. Elevated to a first-class directed test: observe and document actual DUT behavior, then hold the DUT to that documented behavior going forward (regression-worthy, not just characterization). |
 
 ## 5. Resolved decisions
 

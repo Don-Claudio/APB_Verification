@@ -134,10 +134,12 @@ regardless of reset.
 ## 4. Open questions / assumptions to confirm before verification planning
 
 - Back-to-back transactions (new SETUP immediately following a completed
-  ACCESS, no idle cycle between): assumed legal per generic APB rules
-  (2.2), not explicitly called out in this DUT's documentation — worth a
-  directed test rather than an assumption we just carry forward silently.
-- Behavior of `PSEL` deasserting mid-transaction (protocol violation from
-  the master side): not specified as a DUT behavior; this is a case where
-  we're testing "how does the DUT react to an illegal master," which is a
-  meaningful verification question but sits outside strict spec compliance.
+  ACCESS, no idle cycle between): legal per generic APB rules (2.2).
+  Covered explicitly — see verification_plan.md IF-4, coverage_model.md
+  `cp_back_to_back`.
+- `PSEL` deasserting mid-transaction (illegal master behavior): this spec
+  does not mandate a required DUT response — the AMBA APB document doesn't
+  constrain slave behavior under an illegal master condition. Resolved as:
+  verification will observe and document actual behavior, then treat that
+  as the DUT's committed contract going forward, since design intent may
+  not have considered this case. See verification_plan.md AR-7.
