@@ -29,7 +29,8 @@ would apply to verifying any APB4-compliant slave.
 | IF-3 | PREADY gates completion | Transaction only completes on the cycle `PREADY` is sampled high; deasserted `PREADY` correctly extends ACCESS phase (wait states). |
 | IF-4 | Return to IDLE / back-to-back | Bus correctly returns to IDLE after completion, or correctly begins a new SETUP immediately (back-to-back transactions), without violating IF-1/IF-2. |
 | IF-5 | Read vs write direction | `PWRITE` correctly selects read/write behavior; `PWDATA` ignored on reads, `PRDATA` ignored (by master) on writes. |
-| IF-6 | Reset behavior | Bus-level signals (`PREADY`, `PSLVERR`) deassert correctly under reset, FSM returns to idle. |
+| IF-6 | Mid-cycle reset | `PRESETn` asserted at an arbitrary point within a clock cycle (not aligned to an edge) — FSM and outputs must still recover correctly, regardless of exactly when reset lands. |
+| IF-7 | Mid-transaction reset | `PRESETn` asserted between SETUP and transaction completion (i.e. mid-ACCESS, before `PREADY` would have gone high) — transaction must be correctly abandoned, no partial register write, FSM returns cleanly to IDLE. |
 
 ## 3. Function-based features
 

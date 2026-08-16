@@ -15,6 +15,8 @@ Sampled once per completed transaction.
 | `cp_wait_states` | `ZERO` (write, 2-cycle), `ONE` (read, 3-cycle) | AR-1, AR-2 |
 | `cp_pready_extended` | did `PREADY` stay low ≥1 cycle before completing | IF-3 |
 | `cp_back_to_back` | new SETUP begins the cycle immediately following a completed ACCESS, no idle gap | IF-4 |
+| `cp_mid_cycle_reset` | `PRESETn` observed asserted at a non-edge-aligned instant | IF-6 |
+| `cp_mid_txn_reset` | `PRESETn` observed asserted between SETUP and completion of an in-flight transaction | IF-7 |
 
 Cross: `cp_direction × cp_wait_states` — confirms writes are always
 zero-wait and reads are always one-wait, per this DUT's documented timing
@@ -25,6 +27,10 @@ deliberately (directed test or a generator biased toward zero idle cycles
 between transactions), not just hoped for from generic random stimulus —
 same reasoning as `dist` weighting in FIFO, an under-weighted case won't
 reliably show up in a reasonable transaction count otherwise.
+`cp_mid_cycle_reset` and `cp_mid_txn_reset` are directed tests by nature —
+same treatment as FIFO's mid-cycle/mid-transfer reset tests, not something
+constrained-random stimulus would ever produce on its own, since reset
+timing isn't part of normal transaction generation.
 
 ## cg_address — register map coverage (covers FN-1 through FN-9)
 
@@ -77,3 +83,8 @@ just "run it and see." `cp_pstrb_pattern` remains a lighter-weight
 characterization check, since AR-6 confirms an already-known non-behavior
 (strobe is unused) rather than an open question.
 
+## Removed: "Open item" section
+
+Resolved above — back-to-back transactions now has an explicit coverpoint
+(`cp_back_to_back` in `cg_transaction`), and `cp_psel_abort` is elevated
+from characterization-only to a first-class, deliberately-tested scenario.
