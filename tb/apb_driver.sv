@@ -12,8 +12,21 @@ class apb_driver #(parameter int DW = 32, parameter int AW = 5);
       this.drv_done = done;
    endfunction
 
+   task drive_hw_sts();
+      forever begin
+         @(posedge vif.pclk);
+         vif.hw_sts <= $urandom;
+      end
+   endtask
+
+
    task run();
       apb_transaction#(DW, AW) tr;
+
+      fork
+         drive_hw_sts();
+      join_none
+
       forever begin
          gen2drv.get(tr);
 

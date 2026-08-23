@@ -16,6 +16,9 @@ interface apb_if #(
    logic          pready;
    logic          pslverr;
 
+   logic            hw_ctl;   // mirrors DUT's o_hw_ctl
+   logic            hw_sts;   // mirrors DUT's i_hw_sts
+
 
    clocking cb @(posedge pclk);
     output paddr;

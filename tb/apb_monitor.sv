@@ -30,8 +30,14 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
             @(vif.cb);
         end
 
+        #0;
+
         txn.prdata = vif.cb.prdata;
         txn.pslverr = vif.cb.pslverr;
+
+        if (!txn.pwrite && txn.paddr == 16) begin
+            txn.hw_sts = vif.hw_sts;
+        end
 
         mon2scb.put(txn);
 
