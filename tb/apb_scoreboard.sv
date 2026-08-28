@@ -17,7 +17,8 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
       expected_reg[1] = '0;              // 0x04, WO, resets to 0 (unused in practice)
       expected_reg[2] = '0;              // 0x08, RW, resets to 0
       expected_reg[3] = 32'hDEAD_BEEF;   // 0x0C, RO constant, never changes
-      expected_reg[4] = '0;              // 0x10, RO+ — unused; hw_sts checked directly, not via this array
+      expected_reg[4] = '0;              // 0x10, RO+ — unused; hw_sts checked directly,
+      //not via this array
    endfunction
 
    task run();
@@ -103,7 +104,8 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
                end else begin
                   if (txn.prdata !== expected_reg[3]) begin
                      mismatches++;
-                     $error("FN-5: prdata=%0h, expected constant %0h", txn.prdata, expected_reg[3]);
+                     $error("FN-5: prdata=%0h, expected constant %0h",
+                     txn.prdata, expected_reg[3]);
                   end
                   if (txn.pslverr !== 1'b0) begin
                      mismatches++;
