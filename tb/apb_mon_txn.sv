@@ -7,5 +7,6 @@ class apb_mon_txn #(parameter int DW = 32, parameter int AW = 5);
    logic [DW-1:0]   prdata;
    logic            pslverr;
    logic            hw_sts;
+   logic            hw_ctl;
 
 endclass : apb_mon_txn
