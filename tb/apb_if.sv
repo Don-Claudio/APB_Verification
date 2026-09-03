@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 interface apb_if #(
    parameter int DW = 32,
    parameter int AW = 5

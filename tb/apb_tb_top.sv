@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module apb_tb_top;
    import apb_pkg::*;
 
