@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 class apb_mon_txn #(parameter int DW = 32, parameter int AW = 5);
 
    logic [AW-1:0]   paddr;

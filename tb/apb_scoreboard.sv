@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
 
    mailbox #(apb_mon_txn#(DW, AW)) mon2scb;
@@ -16,12 +18,16 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
       expected_reg[4] = '0;
    endfunction
 
+
    task run();
       apb_mon_txn#(DW, AW) txn;
       forever begin
          mon2scb.get(txn);
 
-         case (txn.paddr)
+         logic [2:0] reg_idx;
+         reg_idx = txn.paddr[AW-1:2];
+
+         case (reg_idx)
 
             0 : begin // 0x00, RW, drives hw_ctl
                if (txn.pwrite) begin

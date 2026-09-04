@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 class apb_generator #(parameter int DW = 32, parameter int AW = 5);
 
    mailbox #(apb_transaction#(DW, AW)) gen2drv;

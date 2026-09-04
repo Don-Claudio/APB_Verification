@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 class apb_test #(parameter int DW = 32, parameter int AW = 5);
 
    apb_env#(DW, AW) env;

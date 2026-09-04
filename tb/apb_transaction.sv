@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 class apb_transaction #(parameter int DW = 32, parameter int AW = 5);
 
    rand logic [AW-1:0]   paddr;

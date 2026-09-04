@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
 
    virtual apb_if#(DW, AW)               vif;
