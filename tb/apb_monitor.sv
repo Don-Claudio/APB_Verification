@@ -13,6 +13,8 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
 
    task run();
       apb_mon_txn#(DW, AW) txn;
+      logic [2:0] reg_idx;
+
       forever begin
         @(vif.cb);
         #0;
@@ -37,7 +39,13 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
         txn.prdata = vif.cb.prdata;
         txn.pslverr = vif.cb.pslverr;
 
-        if (!txn.pwrite && txn.paddr == 16) begin
+        reg_idx = txn.paddr[AW-1:2];
+
+        if (!txn.pwrite && txn.paddr == 4) begin
+            txn.hw_sts = vif.hw_sts;
+        end
+
+        if (txn.pwrite && txn.paddr == 0) begin
             txn.hw_ctl = vif.hw_ctl;
         end
 

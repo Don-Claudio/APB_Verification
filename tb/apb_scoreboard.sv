@@ -21,10 +21,11 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
 
    task run();
       apb_mon_txn#(DW, AW) txn;
+      logic [2:0] reg_idx;
+
       forever begin
          mon2scb.get(txn);
 
-         logic [2:0] reg_idx;
          reg_idx = txn.paddr[AW-1:2];
 
          case (reg_idx)
@@ -52,7 +53,7 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
                end
             end
 
-            4 : begin // 0x04, WO — write DOES update storage (index 1
+            1 : begin // 0x04, WO — write DOES update storage (index 1
                       // present in W_ACCESS), read NEVER sees it (index 1
                       // absent from R_ACCESS, falls to default 0)
                if (txn.pwrite) begin
@@ -73,7 +74,7 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
                end
             end
 
-            8 : begin // 0x08, RW
+            2 : begin // 0x08, RW
                if (txn.pwrite) begin
                   expected_reg[2] = txn.pwdata;
                   if (txn.pslverr !== 1'b0) begin
@@ -92,7 +93,7 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
                end
             end
 
-            12 : begin // 0x0C, RO constant — index 3 absent from
+            3 : begin // 0x0C, RO constant — index 3 absent from
                        // W_ACCESS (no-op), present in wr_err list
                if (txn.pwrite) begin
                   if (txn.pslverr !== 1'b1) begin
@@ -112,7 +113,7 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
                end
             end
 
-            16 : begin // 0x10, RO+ — index 4 absent from W_ACCESS
+            4 : begin // 0x10, RO+ — index 4 absent from W_ACCESS
                        // (no-op), present in wr_err list; read bypasses
                        // expected_reg entirely, compares to live hw_sts
                if (txn.pwrite) begin
