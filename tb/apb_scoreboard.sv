@@ -1,5 +1,3 @@
-`timescale 1ns / 1ps
-
 class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
 
    mailbox #(apb_mon_txn#(DW, AW)) mon2scb;
@@ -7,9 +5,13 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
    logic [DW-1:0] expected_reg[5];
    int unsigned mismatches;
 
+   bit   pending_hw_ctl;
+   logic expected_hw_ctl;
+
    function new(mailbox #(apb_mon_txn#(DW, AW)) mbx);
       this.mon2scb = mbx;
       mismatches   = 0;
+      pending_hw_ctl = 0;
 
       expected_reg[0] = '0;
       expected_reg[1] = '0;
@@ -18,13 +20,21 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
       expected_reg[4] = '0;
    endfunction
 
-
    task run();
       apb_mon_txn#(DW, AW) txn;
       logic [2:0] reg_idx;
 
       forever begin
          mon2scb.get(txn);
+
+         // Service any pending hw_ctl check from the previous transaction
+         if (pending_hw_ctl) begin
+            if (txn.hw_ctl !== expected_hw_ctl) begin
+               mismatches++;
+               $error("FN-7: hw_ctl=%0h, expected=%0h", txn.hw_ctl, expected_hw_ctl);
+            end
+            pending_hw_ctl = 0;
+         end
 
          reg_idx = txn.paddr[AW-1:2];
 
@@ -33,10 +43,8 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
             0 : begin // 0x00, RW, drives hw_ctl
                if (txn.pwrite) begin
                   expected_reg[0] = txn.pwdata;
-                  if (txn.hw_ctl !== expected_reg[0]) begin
-                     mismatches++;
-                     $error("FN-7: hw_ctl=%0h, expected=%0h", txn.hw_ctl, expected_reg[0]);
-                  end
+                  pending_hw_ctl  = 1;
+                  expected_hw_ctl = txn.pwdata[0];
                   if (txn.pslverr !== 1'b0) begin
                      mismatches++;
                      $error("FN-12: unexpected pslverr on legal write to 0x00");
@@ -53,9 +61,7 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
                end
             end
 
-            1 : begin // 0x04, WO — write DOES update storage (index 1
-                      // present in W_ACCESS), read NEVER sees it (index 1
-                      // absent from R_ACCESS, falls to default 0)
+            1 : begin // 0x04, WO
                if (txn.pwrite) begin
                   expected_reg[1] = txn.pwdata;
                   if (txn.pslverr !== 1'b0) begin
@@ -93,8 +99,7 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
                end
             end
 
-            3 : begin // 0x0C, RO constant — index 3 absent from
-                       // W_ACCESS (no-op), present in wr_err list
+            3 : begin // 0x0C, RO constant
                if (txn.pwrite) begin
                   if (txn.pslverr !== 1'b1) begin
                      mismatches++;
@@ -113,9 +118,7 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
                end
             end
 
-            4 : begin // 0x10, RO+ — index 4 absent from W_ACCESS
-                       // (no-op), present in wr_err list; read bypasses
-                       // expected_reg entirely, compares to live hw_sts
+            4 : begin // 0x10, RO+ — bypasses expected_reg, compares live hw_sts
                if (txn.pwrite) begin
                   if (txn.pslverr !== 1'b1) begin
                      mismatches++;

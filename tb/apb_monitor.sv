@@ -1,5 +1,3 @@
-`timescale 1ns / 1ps
-
 class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
 
    virtual apb_if#(DW, AW)               vif;
@@ -16,43 +14,39 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
       logic [2:0] reg_idx;
 
       forever begin
-        @(vif.cb);
-        #0;
+         @(vif.cb);
+         #0;
 
-        while(!vif.psel || vif.penable) begin
+         while (!vif.psel || vif.penable) begin
             @(vif.cb);
-        end
+            #0;
+         end
 
-        txn = new();
+         txn = new();
+         txn.paddr  = vif.paddr;
+         txn.pwrite = vif.pwrite;
+         txn.pwdata = vif.pwdata;
+         txn.pstrb  = vif.pstrb;
+         txn.hw_ctl = vif.hw_ctl;   // unconditional snapshot, reflects
+                                    // any prior 0x00 write by construction
 
-        txn.paddr = vif.paddr;
-        txn.pwrite = vif.pwrite;
-        txn.pwdata = vif.pwdata;
-        txn.pstrb = vif.pstrb;
+         reg_idx = txn.paddr[AW-1:2];
 
-        while(!vif.cb.pready) begin
-            @(vif.cb);
-        end
-
-        #0;
-
-        txn.prdata = vif.cb.prdata;
-        txn.pslverr = vif.cb.pslverr;
-
-        reg_idx = txn.paddr[AW-1:2];
-
-        if (!txn.pwrite && txn.paddr == 4) begin
+         if (!txn.pwrite && reg_idx == 4) begin
             txn.hw_sts = vif.hw_sts;
+         end
+
+        while (!vif.cb.pready) begin
+            @(vif.cb);
         end
 
-        if (txn.pwrite && txn.paddr == 0) begin
-            txn.hw_ctl = vif.hw_ctl;
-        end
+         #0;
 
-        mon2scb.put(txn);
+         txn.prdata  = vif.cb.prdata;
+         txn.pslverr = vif.cb.pslverr;
 
+         mon2scb.put(txn);
       end
-
-    endtask
+   endtask
 
 endclass : apb_monitor

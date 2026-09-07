@@ -15,10 +15,10 @@ class apb_driver #(parameter int DW = 32, parameter int AW = 5);
    endfunction
 
    task drive_hw_sts();
-      forever begin
-         @(posedge vif.pclk);
-         vif.hw_sts <= $urandom_range(0,1);
-      end
+   forever begin
+      @(posedge vif.pclk);
+      vif.hw_sts <= $urandom_range(0,1);
+   end
    endtask
 
 
