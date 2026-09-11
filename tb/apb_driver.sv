@@ -50,6 +50,15 @@ class apb_driver #(parameter int DW = 32, parameter int AW = 5);
       end
    endtask
 
+   task run_read_streak_test(int num_reads, logic [AW-1:0] addr);
+      apb_transaction#(DW, AW) tr;
+      repeat (num_reads) begin
+         tr = new();
+         assert(tr.randomize() with { paddr == addr; pwrite == 0; });
+         drive_transaction(tr);
+      end
+   endtask
+
 
    task run();
       apb_transaction#(DW, AW) tr;
