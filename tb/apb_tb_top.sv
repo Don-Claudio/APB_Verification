@@ -20,6 +20,24 @@ module apb_tb_top;
       presetn = 1;
    end
 
+   initial begin
+      forever begin
+         @(vif_inst.reset_midcycle_req);
+         @(posedge pclk);
+         #3 presetn = 0;
+         #8 presetn = 1;
+      end
+   end
+
+   initial begin
+      forever begin
+         @(vif_inst.reset_midtransaction_req);
+         @(posedge vif_inst.penable);
+         #5 presetn = 0;
+         #8 presetn = 1;
+      end
+   end
+
    apb_if #(.DW(DW), .AW(AW)) vif_inst (
       .pclk    (pclk),
       .presetn (presetn)

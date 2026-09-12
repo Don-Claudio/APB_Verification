@@ -32,12 +32,13 @@ class apb_env #(parameter int DW = 32, parameter int AW = 5);
       join_none
 
       drv.run_write_streak_test(8, 5'h00);
-      drv.run_read_streak_test(8, 5'h00);
+      drv.run_read_streak_test(9, 5'h00);
 
-      vif.assert_reset_midcycle();
+      -> vif.reset_midcycle_req;
+    #100;
 
       fork
-         vif.assert_reset_midtransaction();
+         -> vif.reset_midtransaction_req;
          drv.run_write_streak_test(1, 5'h00);
       join
 

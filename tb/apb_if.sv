@@ -21,6 +21,9 @@ interface apb_if #(
    logic            hw_ctl;   // mirrors DUT's o_hw_ctl
    logic            hw_sts;   // mirrors DUT's i_hw_sts
 
+   event reset_midcycle_req;
+   event reset_midtransaction_req;
+
 
    clocking cb @(posedge pclk);
     output paddr;
@@ -34,17 +37,6 @@ interface apb_if #(
 
    modport TB (clocking cb);
 
-   task assert_reset_midcycle();
-      @(posedge pclk)
-      #3 presetn = 0;
-      #8 presetn = 1;
-   endtask
-
-   task assert_reset_midtransaction();
-      @(posedge penable);
-      #5 presetn = 0;
-      #8 presetn = 1;
-   endtask
 
 endinterface : apb_if
 
