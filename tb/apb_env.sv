@@ -31,6 +31,10 @@ class apb_env #(parameter int DW = 32, parameter int AW = 5);
        scb.run();
       join_none
 
+      drv.run_write_streak_test(8, 5'h00);
+      drv.run_read_streak_test(8, 5'h00);
+
+
       fork
         gen.run(num_transactions);
         drv.run();
