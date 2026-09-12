@@ -40,5 +40,11 @@ interface apb_if #(
       #8 presetn = 1;
    endtask
 
+   task assert_reset_midtransaction();
+      @(posedge penable);
+      #5 presetn = 0;
+      #8 presetn = 1;
+   endtask
+
 endinterface : apb_if
 
