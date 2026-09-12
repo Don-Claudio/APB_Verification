@@ -34,5 +34,11 @@ interface apb_if #(
 
    modport TB (clocking cb);
 
+   task assert_reset_midcycle();
+      @(posedge pclk)
+      #3 presetn = 0;
+      #8 presetn = 1;
+   endtask
+
 endinterface : apb_if
 
