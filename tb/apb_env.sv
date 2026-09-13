@@ -7,6 +7,7 @@ class apb_env #(parameter int DW = 32, parameter int AW = 5);
    mailbox #(apb_transaction#(DW, AW)) gen2drv;
    mailbox #(apb_mon_txn#(DW, AW))     mon2scb;
    event                               drv_done;
+   event                               reset_occurred;
 
    apb_generator#(DW, AW)  gen;
    apb_driver#(DW, AW)     drv;
@@ -21,8 +22,8 @@ class apb_env #(parameter int DW = 32, parameter int AW = 5);
 
       gen = new(gen2drv,drv_done);
       drv = new(vif,gen2drv,drv_done);
-      mon = new(vif,mon2scb);
-      scb = new(mon2scb);
+      mon = new(vif,mon2scb, reset_occurred);
+      scb = new(mon2scb, reset_occurred);
    endfunction
 
    task run(int num_transactions);

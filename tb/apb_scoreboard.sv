@@ -1,6 +1,7 @@
 class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
 
    mailbox #(apb_mon_txn#(DW, AW)) mon2scb;
+   event                           reset_occurred;
 
    logic [DW-1:0] expected_reg[5];
    int unsigned mismatches;
@@ -8,8 +9,11 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
    bit   pending_hw_ctl;
    logic expected_hw_ctl;
 
-   function new(mailbox #(apb_mon_txn#(DW, AW)) mbx);
+   function new(mailbox #(apb_mon_txn#(DW, AW)) mbx,
+               event reset_evt);
       this.mon2scb = mbx;
+      this.reset_occurred = reset_evt;
+
       mismatches   = 0;
       pending_hw_ctl = 0;
 
@@ -25,7 +29,23 @@ class apb_scoreboard #(parameter int DW = 32, parameter int AW = 5);
       logic [2:0] reg_idx;
 
       forever begin
-         mon2scb.get(txn);
+
+         txn = null;
+         fork
+            begin
+               mon2scb.get(txn);              // Branch A: a real transaction arrived
+            end
+            begin
+               @(reset_occurred);             // Branch B: reset happened instead
+               expected_reg[0] = '0;
+               expected_reg[1] = '0;
+               expected_reg[2] = '0;
+               pending_hw_ctl  = 0;
+            end
+         join_any
+         disable fork;
+
+         if (txn == null) continue;
 
          // Service any pending hw_ctl check from the previous transaction
          if (pending_hw_ctl) begin

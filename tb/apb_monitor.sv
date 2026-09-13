@@ -2,14 +2,28 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
 
    virtual apb_if#(DW, AW)               vif;
    mailbox #(apb_mon_txn#(DW, AW))       mon2scb;
+   event                                 reset_occurred;
 
    function new(virtual apb_if#(DW, AW)         vif,
-                mailbox #(apb_mon_txn#(DW, AW)) mbx);
+                mailbox #(apb_mon_txn#(DW, AW)) mbx,
+                event reset_evt);
       this.vif     = vif;
       this.mon2scb = mbx;
+      this.reset_occurred = reset_evt;
    endfunction
 
+   task watch_reset();
+      forever begin
+         @(negedge vif.presetn);
+         -> reset_occurred;
+      end
+   endtask
+
    task run();
+      fork
+         watch_reset();
+      join_none
+      
       apb_mon_txn#(DW, AW) txn;
       logic [2:0] reg_idx;
 
