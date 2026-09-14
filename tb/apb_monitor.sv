@@ -20,12 +20,14 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
    endtask
 
    task run();
+
+      apb_mon_txn#(DW, AW) txn;
+      logic [2:0] reg_idx;
+
       fork
          watch_reset();
       join_none
-      
-      apb_mon_txn#(DW, AW) txn;
-      logic [2:0] reg_idx;
+
 
       forever begin
          @(vif.cb);
