@@ -59,6 +59,23 @@ class apb_driver #(parameter int DW = 32, parameter int AW = 5);
       end
    endtask
 
+   task run_psel_abort_test(logic [AW-1:0] addr, logic [DW-1:0] abort_data);
+      // SETUP, same as always
+      vif.cb.paddr   <= addr;
+      vif.cb.pwrite  <= 1;
+      vif.cb.pwdata  <= abort_data;
+      vif.cb.psel    <= 1;
+      vif.cb.penable <= 0;
+      @(vif.cb);
+
+      // Enter ACCESS, then abort before pready/completion
+      vif.cb.penable <= 1;
+      @(vif.cb);
+      vif.cb.psel    <= 0;   // abort here — before checking pready at all
+      vif.cb.penable <= 0;
+      @(vif.cb);
+   endtask
+
 
    task run();
       apb_transaction#(DW, AW) tr;
