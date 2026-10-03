@@ -52,8 +52,22 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
             txn.hw_sts = vif.hw_sts;
          end
 
-        while (!vif.cb.pready) begin
-            @(vif.cb);
+        fork
+            begin: wait_pready
+               while (!vif.cb.pready) begin
+                  @(vif.cb);
+               end
+            end
+            begin: wait_abort
+               @(negedge vif.psel);
+            end
+        join_any
+        disable fork;
+
+        if (!vif.psel) begin
+         // Aborted mid-ACCESS — psel dropped before pready ever asserted.
+         // Nothing completed; silently drop this transaction, don't report it.
+         continue;
         end
 
          #0;
