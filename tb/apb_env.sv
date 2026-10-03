@@ -43,6 +43,10 @@ class apb_env #(parameter int DW = 32, parameter int AW = 5);
          drv.run_write_streak_test(1, 5'h00);
       join
 
+      drv.run_write_streak_test(1, 5'h00);        // establish a known value first
+      drv.run_psel_abort_test(5'h00, 32'hDEAD_0000); // attempted overwrite, aborted
+      drv.run_read_streak_test(1, 5'h00);          // confirm old value survived
+
 
       fork
         gen.run(num_transactions);
