@@ -5,6 +5,27 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
    event                                 reset_occurred;
    apb_mon_txn#(DW, AW)                  txn;
    int unsigned                          wait_cycles;
+   logic [2:0] reg_idx;
+
+   covergroup cg_address;
+      cp_reg : coverpoint reg_idx{
+         bins reg_00 = {0};
+         bins reg_04 = {1};
+         bins reg_08 = {2};
+         bins reg_0C = {3};
+         bins reg_10 = {4};
+         bins unmapped = {[5:7]};
+      }
+
+      cp_dir : coverpoint txn.pwrite{
+         bins read = {0};
+         bins write = {1};
+      }
+
+      cx_reg_x_dir : cross cp_reg, cp_dir;
+      
+   endgroup
+
 
    covergroup cg_transaction;
       cp_direction : coverpoint txn.pwrite{
@@ -31,6 +52,7 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
       this.mon2scb = mbx;
       this.reset_occurred = reset_evt;
       cg_transaction = new();
+      cg_address = new();
 
    endfunction
 
@@ -42,8 +64,6 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
    endtask
 
    task run();
-
-      logic [2:0] reg_idx;
 
       fork
          watch_reset();
@@ -99,6 +119,7 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
          txn.pslverr = vif.cb.pslverr;
 
          cg_transaction.sample();
+         cg_address.sample();
          mon2scb.put(txn);
       end
    endtask
