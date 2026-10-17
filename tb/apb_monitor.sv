@@ -3,6 +3,26 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
    virtual apb_if#(DW, AW)               vif;
    mailbox #(apb_mon_txn#(DW, AW))       mon2scb;
    event                                 reset_occurred;
+   apb_mon_txn#(DW, AW)                  txn;
+   int unsigned                          wait_cycles;
+
+   covergroup cg_transaction;
+      cp_direction : coverpoint txn.pwrite{
+         bins read = {0};
+         bins write = {1};
+      }
+
+      cp_wait_cycles : coverpoint wait_cycles{
+         bins fast = {1};
+         bins slow = {2};
+      }
+
+      cx_dir_x_wait : cross cp_direction, cp_wait_cycles{
+         illegal_bins write_but_slow = binsof(cp_direction.write) && binsof(cp_wait_cycles.slow);
+         illegal_bins read_but_fast = binsof(cp_direction.read) && binsof(cp_wait_cycles.fast);
+      }
+
+   endgroup
 
    function new(virtual apb_if#(DW, AW)         vif,
                 mailbox #(apb_mon_txn#(DW, AW)) mbx,
@@ -10,6 +30,8 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
       this.vif     = vif;
       this.mon2scb = mbx;
       this.reset_occurred = reset_evt;
+      cg_transaction = new();
+
    endfunction
 
    task watch_reset();
@@ -21,7 +43,6 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
 
    task run();
 
-      apb_mon_txn#(DW, AW) txn;
       logic [2:0] reg_idx;
 
       fork
@@ -33,7 +54,7 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
          @(vif.cb);
          #0;
 
-         while (!vif.psel || vif.penable) begin
+         while (!(vif.psel ===1'b1 && vif.penable === 1'b0)) begin
             @(vif.cb);
             #0;
          end
@@ -52,10 +73,12 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
             txn.hw_sts = vif.hw_sts;
          end
 
+        wait_cycles = 0;
         fork
             begin: wait_pready
                while (!vif.cb.pready) begin
                   @(vif.cb);
+                  wait_cycles++;
                end
             end
             begin: wait_abort
@@ -75,6 +98,7 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
          txn.prdata  = vif.cb.prdata;
          txn.pslverr = vif.cb.pslverr;
 
+         cg_transaction.sample();
          mon2scb.put(txn);
       end
    endtask
