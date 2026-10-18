@@ -7,9 +7,47 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
    int unsigned                          wait_cycles;
    logic [2:0] reg_idx;
 
+   covergroup cg_errors;
+
+      cp_reg : coverpoint reg_idx {
+         bins reg_00   = {0};
+         bins reg_04   = {1};
+         bins reg_08   = {2};
+         bins reg_0C   = {3};
+         bins reg_10   = {4};
+         bins unmapped = {[5:7]};
+      }
+
+      cp_dir : coverpoint txn.pwrite {
+         bins read  = {0};
+         bins write = {1};
+      }
+
+      cp_err : coverpoint txn.pslverr {
+         bins none  = {0};
+         bins error = {1};
+      }
+
+      cx_err : cross cp_reg, cp_dir, cp_err {
+         option.cross_auto_bin_max = 0;   // only the cells we name below
+
+         bins wr_to_RO   = binsof(cp_dir.write) && binsof(cp_reg) intersect {3,4}
+                           && binsof(cp_err.error);
+         bins rd_from_WO = binsof(cp_dir.read) && binsof(cp_reg.reg_04)
+                           && binsof(cp_err.error);
+         bins legal_write_clean = binsof(cp_dir.write) && binsof(cp_reg) intersect {0,1,2}
+                           && binsof(cp_err.none);
+         bins legal_read_clean  = binsof(cp_dir.read) && binsof(cp_reg) intersect {0,2,3,4}
+                           && binsof(cp_err.none);
+         bins unmapped_clean = binsof(cp_reg.unmapped) && binsof(cp_err.none);
+      }
+
+   endgroup
+
+
    covergroup cg_hw_interface;
       cp_hw_ctl : coverpoint txn.hw_ctl{
-         bins rise = (o=>1);
+         bins rise = (0=>1);
          bins fall = (1=>0);
       }
 
@@ -65,6 +103,7 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
       cg_transaction = new();
       cg_address = new();
       cg_hw_interface = new();
+      cg_errors = new();
 
    endfunction
 
@@ -133,6 +172,7 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
          cg_transaction.sample();
          cg_address.sample();
          cg_hw_interface.sample();
+         cg_errors.sample();
          mon2scb.put(txn);
       end
    endtask
