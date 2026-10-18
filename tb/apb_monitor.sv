@@ -7,6 +7,18 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
    int unsigned                          wait_cycles;
    logic [2:0] reg_idx;
 
+   covergroup cg_hw_interface;
+      cp_hw_ctl : coverpoint txn.hw_ctl{
+         bins rise = (o=>1);
+         bins fall = (1=>0);
+      }
+
+      cp_hw_sts : coverpoint txn.hw_sts iff (!txn.pwrite && reg_idx == 4){
+         bins low = {0};
+         bins high = {1};
+      }
+   endgroup
+
    covergroup cg_address;
       cp_reg : coverpoint reg_idx{
          bins reg_00 = {0};
@@ -23,7 +35,6 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
       }
 
       cx_reg_x_dir : cross cp_reg, cp_dir;
-      
    endgroup
 
 
@@ -53,6 +64,7 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
       this.reset_occurred = reset_evt;
       cg_transaction = new();
       cg_address = new();
+      cg_hw_interface = new();
 
    endfunction
 
@@ -120,6 +132,7 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
 
          cg_transaction.sample();
          cg_address.sample();
+         cg_hw_interface.sample();
          mon2scb.put(txn);
       end
    endtask
