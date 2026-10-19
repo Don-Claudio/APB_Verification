@@ -27,6 +27,7 @@ class apb_driver #(parameter int DW = 32, parameter int AW = 5);
       vif.cb.pwdata  <= tr.pwdata;
       vif.cb.psel    <= 1;
       vif.cb.penable <= 0;
+      vif.cb.pstrb <= tr.pstrb;
 
       @(vif.cb);
 
