@@ -5,7 +5,8 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
    event                                 reset_occurred;
    apb_mon_txn#(DW, AW)                  txn;
    int unsigned                          wait_cycles;
-   logic [2:0] reg_idx;
+   logic [2:0]                           reg_idx;
+   bit                                   aborted;
 
    covergroup cg_robustness;
       cp_pstrb_pattern : coverpoint txn.pstrb iff (txn.pwrite && !aborted){
@@ -189,6 +190,7 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
          cg_address.sample();
          cg_hw_interface.sample();
          cg_errors.sample();
+         cg_robustness.sample();
          mon2scb.put(txn);
       end
    endtask

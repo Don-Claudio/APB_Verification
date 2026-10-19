@@ -70,9 +70,9 @@ class apb_driver #(parameter int DW = 32, parameter int AW = 5);
       @(vif.cb);
 
       // Enter ACCESS, then abort before pready/completion
+      vif.cb.psel    <= 0;
       vif.cb.penable <= 1;
       @(vif.cb);
-      vif.cb.psel    <= 0;   // abort here — before checking pready at all
       vif.cb.penable <= 0;
       @(vif.cb);
    endtask
