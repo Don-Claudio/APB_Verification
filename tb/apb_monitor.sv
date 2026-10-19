@@ -7,6 +7,18 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
    int unsigned                          wait_cycles;
    logic [2:0] reg_idx;
 
+   covergroup cg_robustness;
+      cp_pstrb_pattern : coverpoint txn.pstrb iff (txn.pwrite && !aborted){
+         bins full = {4'b1111};
+         bins zero = {4'b0000};
+         bins  partial = {[4'b0001:4'b1110]};
+      }
+
+      cp_psel_abort : coverpoint aborted {
+         bins happened = {1};
+      }
+   endgroup
+
    covergroup cg_errors;
 
       cp_reg : coverpoint reg_idx {
@@ -104,6 +116,7 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
       cg_address = new();
       cg_hw_interface = new();
       cg_errors = new();
+      cg_robustness = new();
 
    endfunction
 
@@ -159,6 +172,9 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
         disable fork;
 
         if (!vif.psel) begin
+         aborted = 1;
+         cg_robustness.sample();
+         aborted = 0;
          // Aborted mid-ACCESS — psel dropped before pready ever asserted.
          // Nothing completed; silently drop this transaction, don't report it.
          continue;
