@@ -1,0 +1,17 @@
+name: Lint
+
+on: [push, pull_request]
+
+jobs:
+  verible-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chipsalliance/verible-linter-action@main
+        with:
+          paths: |
+            rtl
+            tb
+          extra_args: "--waiver_files=scripts/verible_waivers.txt"
+          fail_on_error: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
