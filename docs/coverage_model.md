@@ -1,90 +1,107 @@
 # APB Coverage Model
 
-Maps every feature in `docs/verification_plan.md` to a concrete coverage
-construct. Same structure as the FIFO project: one covergroup per related
-feature cluster, sampled from the monitor (not the driver — coverage
-reflects what actually happened on the bus, not what was requested).
+Maps `docs/verification_plan.md` to functional coverage, and records which plan
+items are covered, which are checked another way, and which are not tracked.
 
-## cg_transaction — basic transaction shape (covers IF-1, IF-3, IF-5, AR-1, AR-2)
+All five covergroups live in `tb/apb_monitor.sv` and are sampled once per
+completed transaction, after `PREADY` is seen and the response is captured. An
+aborted transaction is dropped by the monitor and sampled only by `cg_robustness`.
 
-Sampled once per completed transaction.
+Coverage shows whether a scenario occurred. The scoreboard judges whether the
+DUT's response was correct. Full coverage with a clean scoreboard means every
+defined scenario happened and every one that happened was checked.
 
-| Coverpoint | Bins | Plan item |
-|---|---|---|
-| `cp_direction` | `READ`, `WRITE` | IF-5 |
-| `cp_wait_states` | `ZERO` (write, 2-cycle), `ONE` (read, 3-cycle) | AR-1, AR-2 |
-| `cp_pready_extended` | did `PREADY` stay low ≥1 cycle before completing | IF-3 |
-| `cp_back_to_back` | new SETUP begins the cycle immediately following a completed ACCESS, no idle gap | IF-4 |
-| `cp_mid_cycle_reset` | `PRESETn` observed asserted at a non-edge-aligned instant (confirms correct synchronous sampling, not distinct per-instant behavior — see verification_plan.md IF-6) | IF-6 |
-| `cp_mid_txn_reset` | `PRESETn` observed asserted between SETUP and completion of an in-flight transaction | IF-7 |
+## Sampling
 
-Cross: `cp_direction × cp_wait_states` — confirms writes are always
-zero-wait and reads are always one-wait, per this DUT's documented timing
-(catches a regression if that relationship ever breaks).
+Class-level monitor members read by the covergroups: `txn`, `reg_idx`,
+`wait_cycles`, `aborted`. `reg_idx = paddr[AW-1:2]` matches the DUT's
+word-aligned decode, so bins are by register index, not raw address.
+`wait_cycles` counts ticks spent waiting for `PREADY` (1 for a write, 2 for a
+read on this DUT).
 
-Explicit bin, not left to chance: `cp_back_to_back` needs to be hit
-deliberately (directed test or a generator biased toward zero idle cycles
-between transactions), not just hoped for from generic random stimulus —
-same reasoning as `dist` weighting in FIFO, an under-weighted case won't
-reliably show up in a reasonable transaction count otherwise.
-`cp_mid_cycle_reset` and `cp_mid_txn_reset` are directed tests by nature —
-same treatment as FIFO's mid-cycle/mid-transfer reset tests, not something
-constrained-random stimulus would ever produce on its own, since reset
-timing isn't part of normal transaction generation.
-
-## cg_address — register map coverage (covers FN-1 through FN-9)
-
-Sampled once per completed transaction.
+## cg_transaction
 
 | Coverpoint | Bins | Plan item |
 |---|---|---|
-| `cp_addr` | `REG_00`, `REG_04`, `REG_08`, `REG_0C`, `REG_10`, `UNMAPPED` (range bin, not enumerated individually) | FN-1–FN-8 |
-| `cp_addr_x_direction` (cross) | every address × {READ, WRITE} | FN-1–FN-9 |
+| `cp_direction` | read, write | IF-5 |
+| `cp_wait_cycles` | fast = 1, slow = 2 | AR-1, AR-2, IF-3 |
+| `cx_dir_x_wait` | read×slow, write×fast | AR-1, AR-2 |
 
-The `UNMAPPED` bin must be a `[low:high]` range covering the rest of the
-address space, not left as an implicit catch-all — same lesson as FIFO's
-`dist` constraint note: naming specific bins makes everything else illegal
-unless explicitly ranged.
+`illegal_bins` write×slow and read×fast raise an error if this DUT ever makes a
+write wait or a read finish early. Their report line reads `ZERO`, which is the
+passing result. They are excluded from the percentage.
 
-## cg_hw_interface — external control/status path (covers FN-6, FN-7)
-
-| Coverpoint | Bins | Plan item |
-|---|---|---|
-| `cp_hw_ctl_toggle` | `o_hw_ctl` observed both 0→1 and 1→0 after a 0x00 write | FN-7 |
-| `cp_hw_sts_value` | `i_hw_sts` observed both 0 and 1 at the moment 0x10 is read | FN-6 |
-
-## cg_errors — PSLVERR conditions (covers FN-10, FN-11, FN-12, AR-3, AR-4, AR-5)
+## cg_address
 
 | Coverpoint | Bins | Plan item |
 |---|---|---|
-| `cp_err_cause` | `WR_TO_RO` (0x0C), `WR_TO_ROPLUS` (0x10), `RD_FROM_WO` (0x04), `NONE` | FN-10, FN-11, FN-12 |
-| `cp_err_timing` | error asserted exactly 1 cycle after triggering condition (AR-3) | AR-3 |
+| `cp_reg` | reg_00, reg_04, reg_08, reg_0C, reg_10, unmapped = [5:7] | FN-1 to FN-5, FN-8, FN-9 |
+| `cp_dir` | read, write | |
+| `cx_reg_x_dir` | all 12 combinations | |
 
-AR-4/AR-5 (the wr_err/rd_err evaluation-point asymmetry) aren't separately
-covered here — they're structural facts about *when* the DUT evaluates the
-condition, not independently observable bus-level outcomes distinct from
-`cp_err_cause`. They're exercised implicitly by hitting every `cp_err_cause`
-bin, but call this out explicitly as a judgment call, not an oversight —
-worth confirming this reasoning holds once the testbench actually exists.
+No cross exclusions: every combination can occur. Error-path accesses (read of
+0x04, write to 0x0C/0x10) are legal stimulus, so they are normal bins.
 
-## cg_robustness — directed/characterization items (covers AR-6, AR-7)
+## cg_hw_interface
 
 | Coverpoint | Bins | Plan item |
 |---|---|---|
-| `cp_pstrb_pattern` | full-mask write, partial-mask write, zero-mask write — all expected to behave identically | AR-6 |
-| `cp_psel_abort` | `PSEL` deasserted before `PENABLE` observed at least once | AR-7 |
+| `cp_hw_ctl` | rise (0=>1), fall (1=>0) | FN-7 |
+| `cp_hw_sts` | low, high, on reads of 0x10 | FN-6 |
 
-`cp_psel_abort` is not lower priority than functional coverage — the design
-spec is silent on required behavior here, which is exactly the kind of gap
-verification exists to expose rather than skip. Treated as a directed test
-with its own explicit pass/fail expectation (documented once observed
-behavior is known, in `docs/coverage_results.md` at that milestone), not
-just "run it and see." `cp_pstrb_pattern` remains a lighter-weight
-characterization check, since AR-6 confirms an already-known non-behavior
-(strobe is unused) rather than an open question.
+`hw_ctl` mirrors bit 0 of register 0x00, so a reset can also produce a `fall`.
 
-## Removed: "Open item" section
+## cg_errors
 
-Resolved above — back-to-back transactions now has an explicit coverpoint
-(`cp_back_to_back` in `cg_transaction`), and `cp_psel_abort` is elevated
-from characterization-only to a first-class, deliberately-tested scenario.
+| Coverpoint | Bins |
+|---|---|
+| `cp_reg`, `cp_dir` | as above |
+| `cp_err` | none, error |
+| `cx_err` (named cells only) | wr_to_RO, rd_from_WO, legal_write_clean, legal_read_clean, unmapped_clean |
+
+Plan items: FN-3, FN-4, FN-8 to FN-12. Each cell names the stimulus and the
+expected `PSLVERR` response, so a cell only ticks if both occurred.
+
+## cg_robustness
+
+| Coverpoint | Bins | Plan item |
+|---|---|---|
+| `cp_pstrb_pattern` | full = 1111, zero = 0000, partial = 0001 to 1110, on completed writes | AR-6 |
+| `cp_psel_abort` | happened | AR-7 |
+
+This group confirms the directed tests reached the bus. It does not judge the
+DUT's response.
+
+## Traceability
+
+| Plan item | Mechanism |
+|---|---|
+| IF-1, IF-2 | **Not checked** (see gaps) |
+| IF-3 | Covered: `cp_wait_cycles.slow` |
+| IF-4 | Exercised incidentally by streak and forked tests; no coverpoint |
+| IF-5 | Covered: `cp_direction` |
+| IF-6, IF-7 | Directed tests plus scoreboard resync on reset; no coverpoint |
+| FN-1 to FN-5, FN-8, FN-9 | Scoreboard plus `cx_reg_x_dir` |
+| FN-6, FN-7 | Scoreboard plus `cg_hw_interface` |
+| FN-10 to FN-12 | Scoreboard plus `cx_err` |
+| FN-13 | Scoreboard model resync; no dedicated read-after-reset |
+| AR-1, AR-2 | `cx_dir_x_wait` with `illegal_bins` |
+| AR-3 to AR-5 | Not covered (see decisions) |
+| AR-6, AR-7 | `cg_robustness` |
+
+## Decisions
+
+- **`cp_err_timing` (AR-3) dropped.** `PSLVERR` is registered and sampled with
+  `PREADY`, so a late error is seen as 0 by the scoreboard. An early error
+  cannot occur from a registered output. This is reasoned, not tested.
+- **AR-4 and AR-5 not covered.** They describe when the DUT evaluates the error
+  condition internally, which is not separately observable at the bus.
+- **Reset bins removed from `cg_transaction`.** Reset is not a per-transaction
+  event. The monitor raises `reset_occurred` and the scoreboard resyncs.
+
+## Known gaps
+
+- **IF-1 and IF-2** are master-side protocol rules produced by our own driver.
+  Nothing currently checks them. An assertion bound to the interface would.
+- **IF-4, IF-6, IF-7** have no coverage bins, only directed tests.
+- **FN-13** is exercised only incidentally.
