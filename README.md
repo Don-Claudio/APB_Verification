@@ -1,46 +1,64 @@
 # APB Verification Project
 
-Verification of an AMBA APB (Advanced Peripheral Bus) slave peripheral,
-verified against a written spec, verification plan, and coverage model.
-Second project in a structured sequence practicing industry-style
-verification methodology, following the FIFO project.
+Verification of an AMBA APB slave peripheral against a written spec, verification plan and coverage model. Second project in a sequence practicing industry-style verification methodology (spec, verification plan, coverage model, testbench), using both directed and constrained-random stimulus.
 
 ## Status
 
 * Design specification
-* Verification plan (interface-based / function-based / architecture-based
-  features, per Haque's method as referenced in Bergeron Ch.3)
-* Coverage model (mapped to plan items; not yet implemented as covergroups)
-* Testbench core (interface, transaction, generator, driver, monitor,
-  scoreboard, environment, test, top)
-* First clean simulation run (200 constrained-random transactions)
-* Directed tests: write/read streak, mid-cycle reset, mid-transaction reset
-* Directed test in progress: PSEL-abort mid-transaction (AR-7) — driver
-  task written, monitor abort-detection still needed
-* Directed test not started: PSTRB-has-no-effect (AR-6)
-* Functional coverage (covergroups) — not yet implemented
-* Lint (Verible) — clean on all authored `tb/` files, from project start
-* CI (GitHub Actions) — not yet added
-* End-of-project summary document — not yet written
+* Verification plan (interface-based / function-based / architecture-based features, per Haque's method as referenced in Bergeron Ch.3)
+* Coverage model
+* Testbench (interface, transaction, generator, driver, monitor, scoreboard, environment, test, top-level)
+* Directed tests: write/read streak, mid-cycle reset, mid-transaction reset, PSEL abort, PSTRB no-effect
+* Constrained-random stimulus, weighted toward valid register addresses
+* Functional coverage: five covergroups, 100%
+* Lint (Verible), clean
 
 ## What this verifies
 
-An APB4-shaped slave with a 5-register address map (RW, WO, RW, RO
-constant, RO+ live-hardware), one wait state on read, zero on write,
-`PSLVERR` on illegal accesses, and an external hardware control/status
-pair (`o_hw_ctl`/`i_hw_sts`). Covers protocol-level SETUP/ACCESS
-sequencing, per-register functional correctness, and architecture-level
-edge cases the design spec doesn't explicitly define (illegal-master
-`PSEL` drop, reset asserted mid-cycle/mid-transaction) — see
-`docs/verification_plan.md` for the full feature list.
+An APB4-shaped slave with five registers (RW, WO, RW, RO constant, RO live-hardware), zero wait states on write, one on read, `PSLVERR` on illegal accesses, and an external hardware control/status pin pair. Covers per-register behavior, error responses, reset behavior, and cases the design spec leaves undefined, such as the master dropping `PSEL` mid-transaction. Known gaps are listed in `docs/coverage_model.md`.
 
 ## DUT attribution
 
-DUT: `apb_slave.sv`, sourced from https://github.com/iammituraj/apb
-(Mitu Raj, chip@chipmunklogic.com), pulled in unmodified with attribution
-in the file header and here. Per repository terms: open-source, free to
-use/modify/distribute. Verification plan and testbench built independently
-against the DUT's documented interface/register map, not by reading its
-FSM implementation line by line.
+The RTL in `rtl/apb_slave.sv` is from https://github.com/iammituraj/apb (Mitu Raj, chip@chipmunklogic.com), open-source and used unmodified. The spec, plan and testbench were written independently against the DUT's documented behavior.
 
 ## Structure
+
+```
+docs/     specification, verification plan, coverage model, coverage results
+rtl/      the DUT
+tb/       testbench (interface, classes, top-level module)
+sim/      QuestaSim run script
+scripts/  lint script, Verible waiver file
+```
+
+## Running the simulation
+
+Requires QuestaSim (tested on 2021.1). From `sim/`:
+
+```
+vsim -do run.do
+```
+
+Compiles the DUT and testbench, runs the directed tests followed by 200 constrained-random transactions, and prints a functional coverage report. The seed is printed as `Sv_Seed`; replay a run with `-sv_seed <value>`.
+
+## Linting
+
+Requires [Verible](https://github.com/chipsalliance/verible). From `sim/`:
+
+```
+bash ../scripts/lint.sh
+```
+
+The DUT is sourced code left unmodified, so its findings are waived in `scripts/verible_waivers.txt`.
+
+## Results
+
+* Scoreboard: 0 mismatches.
+* Functional coverage: 100% across all five covergroups. Latest snapshot in `docs/coverage_results.md`.
+
+## Documentation
+
+* `docs/spec.md`: generic APB behavior and this DUT's register map
+* `docs/verification_plan.md`: features to verify
+* `docs/coverage_model.md`: how each plan item is covered, and known gaps
+* `docs/coverage_results.md`: coverage snapshot
