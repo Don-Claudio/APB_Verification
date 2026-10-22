@@ -62,3 +62,9 @@ The DUT is sourced code left unmodified, so its findings are waived in `scripts/
 * `docs/verification_plan.md`: features to verify
 * `docs/coverage_model.md`: how each plan item is covered, and known gaps
 * `docs/coverage_results.md`: coverage snapshot
+
+* CI (GitHub Actions): lint runs automatically on every push
+
+## Continuous Integration
+
+`.github/workflows/lint.yml` runs Verible lint on every push and pull request on a GitHub-hosted runner. It does not run the SystemVerilog simulation: QuestaSim is a licensed commercial tool and isn't available on free runners. Simulation runs locally.
