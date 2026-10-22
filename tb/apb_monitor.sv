@@ -9,7 +9,7 @@ class apb_monitor #(parameter int DW = 32, parameter int AW = 5);
    bit                                   aborted;
 
    covergroup cg_robustness;
-      cp_pstrb_pattern : coverpoint txn.pstrb iff (txn.pwrite && !aborted){
+      cp_pstrb_pattern : coverpoint txn.pstrb{
          bins full = {4'b1111};
          bins zero = {4'b0000};
          bins  partial = {[4'b0001:4'b1110]};
