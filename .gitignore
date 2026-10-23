@@ -3,6 +3,7 @@ work/
 *.wlf
 transcript
 *.log
+sim/logs/
 
 # QuestaSim
 modelsim.ini
