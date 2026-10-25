@@ -1,0 +1,17 @@
+Coverage Report Summary Data by instance
+
+=================================================================================
+=== Instance: /apb_pkg
+=== Design Unit: work.apb_pkg
+=================================================================================
+    Enabled Coverage              Bins      Hits    Misses  Coverage
+    ----------------              ----      ----    ------  --------
+    Covergroups                      5        na        na   100.00%
+        Coverpoints/Crosses         14        na        na        na
+            Covergroup Bins         49        49         0   100.00%
+
+
+TOTAL COVERGROUP COVERAGE: 100.00%  COVERGROUP TYPES: 5
+
+Total Coverage By Instance (filtered view): 100.00%
+

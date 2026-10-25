@@ -11,3 +11,6 @@ modelsim.ini
 # Editor/OS cruft
 .DS_Store
 *.swp
+reports/*.ucdb
+reports/t[0-9].txt
+reports/coverage.txt
